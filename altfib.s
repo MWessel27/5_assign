@@ -1,27 +1,27 @@
 # Mikalangelo Wessel - 04/06/2018
 # FSUID: mdw15d
-# altfib.s - 
+# altfib.s - Alternating Fibonacci sequence that detects overflow
 # Register use:
-#	$a0	parameters for terms and polish start number and syscall
+#	$a0	parameters for fib function and syscall
 #	$v0	syscall and return parameter
-#	$t0, $t1 temporary calculations
-#   $s0-$s7 preserving and restoring certain values on the stack for functions
+#	$t0, $t1, $t2, $t3 temporary calculations
+#   $s0-$s3 preserving and restoring certain values on the stack for functions
 
 overflowtest:
-       addi	$sp, $sp, -12	# save $ra and $s0-$s3
+       addi	$sp, $sp, -12	# save $ra and $s2-$s3
        sw	$ra, 8($sp)
        sw   $s3, 4($sp)
        sw   $s2, 0($sp)
 
-       subu $t0, $s2, $s3    # $t0 = difference
+       subu $t0, $s2, $s3    # begin signed overflow check 
        
-       negu $s3, $s3
-       xor $t3, $s2, $s3
-       slt $t3, $t3, $zero
-       bne $t3, $zero, nooverflow
-       xor $t3, $t0, $s2
-       slt $t3, $t3, $zero
-       bne $t3, $zero, out
+       negu $s3, $s3         # negate $s3
+       xor $t3, $s2, $s3     # check if signs differ
+       slt $t3, $t3, $zero   
+       bne $t3, $zero, nooverflow # no overflow since signs !=
+       xor $t3, $t0, $s2     # sign of sums match
+       slt $t3, $t3, $zero   # set $t3 to 1 if signs match
+       bne $t3, $zero, out   # go to overflow
 
        lw	$s2, 0($sp)	    # restore values from stack
        lw   $s3, 4($sp)
@@ -46,7 +46,7 @@ fib:
        sw   $s1, 4($sp)
        sw	$s0, 0($sp)
 
-       addi $s2, $s2, 1
+       addi $s2, $s2, 1     # initialize first and second nums to 0,1
        addi $s3, $s3, 0
 
        move $s0, $a0
@@ -72,9 +72,7 @@ for1:
 	   li	$v0, 1
 	   syscall
 
-       addi $s0, $s0, 1
-
-       addi $t1, $t1, 1
+       addi $t1, $t1, 1    # increment 5 entry per line count 
        j for1
 
 after:
@@ -83,11 +81,11 @@ after:
 	   syscall
        move $a0, $s1        # move next number in sequence to return value
        li $t1, 0
-       j for1               # JUMP
+       j for1               # jump back to for loop
 
 exitfib:
 
-       la	$a0, space		# print a new line after 5th number 
+       la	$a0, space		# print a new line
 	   li	$v0, 4
 	   syscall
 
