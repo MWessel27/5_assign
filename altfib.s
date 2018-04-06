@@ -7,6 +7,37 @@
 #	$t0, $t1 temporary calculations
 #   $s0-$s7 preserving and restoring certain values on the stack for functions
 
+overflowtest:
+       addi	$sp, $sp, -12	# save $ra and $s0-$s3
+       sw	$ra, 8($sp)
+       sw   $s3, 4($sp)
+       sw   $s2, 0($sp)
+
+       subu $t0, $s2, $s3    # $t0 = difference
+       
+       negu $s3, $s3
+       xor $t3, $s2, $s3
+       slt $t3, $t3, $zero
+       bne $t3, $zero, nooverflow
+       xor $t3, $t0, $s2
+       slt $t3, $t3, $zero
+       bne $t3, $zero, out
+
+       lw	$s2, 0($sp)	    # restore values from stack
+       lw   $s3, 4($sp)
+       lw   $ra, 8($sp)
+	   addi	$sp, $sp, 12
+
+       jr $ra
+
+nooverflow:
+       lw	$s2, 0($sp)	    # restore values from stack
+       lw   $s3, 4($sp)
+       lw   $ra, 8($sp)
+	   addi	$sp, $sp, 12
+
+       jr $ra
+
 fib:
        addi	$sp, $sp, -20	# save $ra and $s0-$s3
        sw	$ra, 16($sp)
@@ -30,9 +61,11 @@ for1:
 
        addi $s1, $s0, 0
 
-       sub $t0, $s2, $s3
+       jal overflowtest
 
-       addi $s2, $s3, 0
+       sub $t0, $s2, $s3   # subtract the last two nums to get next
+
+       addi $s2, $s3, 0    # shift nums for calculation
        addi $s3, $t0, 0
 
        move	$a0, $t0		# display answer
@@ -85,6 +118,7 @@ loop:
        j loop                # branch back for next value of n
 
 out:   
+
        la	$a0, space		# print a new line after each series 
 	   li	$v0, 4
 	   syscall
@@ -92,11 +126,16 @@ out:
        la    $a0, adios      # display closing
        li    $v0, 4
        syscall
+
+       move	$a0, $t0		# display answer
+	   li	$v0, 1
+	   syscall
+
        li    $v0, 10         # exit from the program
        syscall
 
        .data
 intro: .asciiz "Here are the alternating Fibonacci numbers that I produced:\n\n"
-adios: .asciiz "Value causing overflow: "
+adios: .asciiz "\nValue causing overflow: "
 blank: .asciiz	" "
 space: .asciiz "\n"
