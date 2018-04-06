@@ -8,16 +8,21 @@
 #   $s0-$s7 preserving and restoring certain values on the stack for functions
 
 fib:
-       addi	$sp, $sp, -12	# save $ra and $s0-$s3
-       sw	$ra, 8($sp)
+       addi	$sp, $sp, -20	# save $ra and $s0-$s3
+       sw	$ra, 16($sp)
+       sw   $s3, 12($sp)
+       sw   $s2, 8($sp)
        sw   $s1, 4($sp)
        sw	$s0, 0($sp)
+
+       addi $s2, $s2, 1
+       addi $s3, $s3, 0
 
        move $s0, $a0
        li $t1, 0
 
 for1:
-       beq $t1, 5, exitfib
+       beq $t1, 5, after
 
        la	$a0, blank		# print a space after each number 
 	   li	$v0, 4
@@ -25,7 +30,12 @@ for1:
 
        addi $s1, $s0, 0
 
-       move	$a0, $s0		# display answer
+       sub $t0, $s2, $s3
+
+       addi $s2, $s3, 0
+       addi $s3, $t0, 0
+
+       move	$a0, $t0		# display answer
 	   li	$v0, 1
 	   syscall
 
@@ -33,6 +43,14 @@ for1:
 
        addi $t1, $t1, 1
        j for1
+
+after:
+       la	$a0, space		# print a new line after 5th number 
+	   li	$v0, 4
+	   syscall
+       move $a0, $s1        # move next number in sequence to return value
+       li $t1, 0
+       j for1               # JUMP
 
 exitfib:
 
@@ -43,8 +61,10 @@ exitfib:
        move $v0, $s1        # move next number in sequence to return value
        lw	$s0, 0($sp)	    # restore values from stack
        lw   $s1, 4($sp)
-	   lw	$ra, 8($sp)
-	   addi	$sp, $sp, 12
+       lw   $s2, 8($sp)
+       lw   $s3, 12($sp)
+	   lw	$ra, 16($sp)
+	   addi	$sp, $sp, 20
 
 	   jr	$ra		# return to calling routine
 
@@ -55,7 +75,7 @@ main:  la    $a0, intro      # print intro
        li $a0, 1
 
 loop:  
-       beq $t0, 10, out
+       beq $t0, 5, out
 
        jal fib             # call fib procedure
 
