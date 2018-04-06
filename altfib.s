@@ -105,17 +105,7 @@ main:  la    $a0, intro      # print intro
        li    $v0, 4
        syscall
 
-       li $a0, 1
-
-loop:  
-       beq $t0, 5, out
-
        jal fib             # call fib procedure
-
-       move  $a0, $v0
-
-       addi $t0, $t0, 1
-       j loop                # branch back for next value of n
 
 out:   
 
